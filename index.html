@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>deck.gl - OSM + WMTS Example</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+    .info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 15px;
+      border-radius: 5px;
+      z-index: 10;
+      max-width: 300px;
+    }
+    .info h2 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+    }
+    .info p {
+      margin: 5px 0;
+      font-size: 12px;
+    }
+    #wmts-toggle, #wms-toggle {
+      margin-top: 10px;
+      margin-right: 5px;
+      padding: 8px 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    #wmts-toggle:hover, #wms-toggle:hover {
+      background: #45a049;
+    }
+    #opacity-container {
+      margin-top: 10px;
+      display: none;
+    }
+    #opacity-container.active {
+      display: block;
+    }
+    #opacity-label {
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    #opacity-slider {
+      width: 100%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="info">
+    <h2>deck.gl Map</h2>
+    <p><strong>Background:</strong> OSM Tiles</p>
+    <p><strong>Location:</strong> Seoul, Korea</p>
+    <p><strong>Coordinates:</strong></p>
+    <p id="coordinates">Lat: 0, Lon: 0</p>
+    <button id="wmts-toggle">WMTS: OFF</button>
+    <button id="wms-toggle">WMS: OFF</button>
+    <div id="opacity-container">
+      <div id="opacity-label">투명도: <span id="opacity-value">70</span>%</div>
+      <input type="range" id="opacity-slider" min="0" max="100" value="70">
+    </div>
+  </div>
+
+  <script src="./bundle.js"></script>
+</body>
+</html>
