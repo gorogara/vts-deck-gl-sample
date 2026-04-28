@@ -2,6 +2,7 @@ import { Deck } from '@deck.gl/core';
 import { MapView } from '@deck.gl/core';
 import { BitmapLayer } from '@deck.gl/layers';
 import { TileLayer, _WMSLayer as WMSLayer } from '@deck.gl/geo-layers';
+import { WebMercatorViewport } from '@deck.gl/core';
 
 const INITIAL_VIEW_STATE = {
   latitude: 37.5665,
@@ -11,6 +12,47 @@ const INITIAL_VIEW_STATE = {
   maxPitch: 89,
   bearing: 0,
 };
+
+const API_URLS = {
+  WMTS: 'http://theprost8004.iptime.org:33393/wmts/{z}/{x}/{y}.png',
+  WMS: 'http://theprost8004.iptime.org:33392/wms',
+};
+
+const WMTS_RENDER_FUNC = (props) => {
+  try {
+    const [[west, south], [east, north]] = props.tile.boundingBox;
+    const { data, ...otherProps } = props;
+    if (!data) return null;
+    return new BitmapLayer(otherProps, {
+      image: data,
+      bounds: [west, south, east, north],
+    });
+  } catch (e) {
+    console.error('WMTS renderSubLayers error:', e);
+    return null;
+  }
+};
+
+const createWmtsLayer = (opacity = 0.7) =>
+  new TileLayer({
+    id: 'wmts-layer',
+    data: [API_URLS.WMTS],
+    minZoom: 0,
+    maxZoom: 19,
+    tileSize: 256,
+    maxRequests: 20,
+    opacity,
+    renderSubLayers: WMTS_RENDER_FUNC,
+  });
+
+const createWmsLayer = (opacity = 0.7) =>
+  new WMSLayer({
+    id: 'wms-layer',
+    data: API_URLS.WMS,
+    serviceType: 'wms',
+    layers: ['0'],
+    opacity,
+  });
 
 // Ensure map container exists and has proper styling
 const mapContainer = document.getElementById('map');
@@ -40,44 +82,8 @@ const osmLayer = new TileLayer({
   },
 });
 
-// WMTS 레이어
-let wmtsLayer = new TileLayer({
-  id: 'wmts-layer',
-  data: ['http://59.27.61.194:30020/wmts/{z}/{x}/{y}.png'],
-  minZoom: 0,
-  maxZoom: 19,
-  tileSize: 256,
-  maxRequests: 20,
-  opacity: 0.7,
-
-  renderSubLayers: (props) => {
-    try {
-      const [[west, south], [east, north]] = props.tile.boundingBox;
-      const { data, ...otherProps } = props;
-
-      if (!data) {
-        return null;
-      }
-
-      return new BitmapLayer(otherProps, {
-        image: data,
-        bounds: [west, south, east, north],
-      });
-    } catch (e) {
-      console.error('WMTS renderSubLayers error:', e);
-      return null;
-    }
-  },
-});
-
-// WMS 레이어
-let wmsLayer = new WMSLayer({
-  id: 'wms-layer',
-  data: 'http://59.27.61.194:30020/wms',
-  serviceType: 'wms',
-  layers: ['0'],
-  opacity: 0.7,
-});
+let wmtsLayer = createWmtsLayer();
+let wmsLayer = createWmsLayer();
 
 // WMTS/WMS on/off 제어
 let wmtsEnabled = false;
@@ -104,9 +110,6 @@ const deckConfig = {
 };
 
 const deck = new Deck(deckConfig);
-
-// 마우스 좌표 표시
-import { WebMercatorViewport } from '@deck.gl/core';
 
 const coordElement = document.getElementById('coordinates');
 
@@ -173,57 +176,17 @@ if (wmsToggle) {
   });
 }
 
-// 투명도 슬라이더 (WMS/WMTS 공유)
 if (opacitySlider) {
   opacitySlider.addEventListener('input', (e) => {
-    const opacityPercent = e.target.value;
-    overlayOpacity = opacityPercent / 100;
-
-    opacityValue.textContent = opacityPercent;
+    overlayOpacity = e.target.value / 100;
+    opacityValue.textContent = e.target.value;
 
     if (wmtsEnabled) {
-      // Recreate wmtsLayer with new opacity
-      wmtsLayer = new TileLayer({
-        id: 'wmts-layer',
-        data: ['http://59.27.61.194:30020/wmts/{z}/{x}/{y}.png'],
-        minZoom: 0,
-        maxZoom: 19,
-        tileSize: 256,
-        maxRequests: 20,
-        opacity: overlayOpacity,
-
-        renderSubLayers: (props) => {
-          try {
-            const [[west, south], [east, north]] = props.tile.boundingBox;
-            const { data, ...otherProps } = props;
-
-            if (!data) {
-              return null;
-            }
-
-            return new BitmapLayer(otherProps, {
-              image: data,
-              bounds: [west, south, east, north],
-            });
-          } catch (e) {
-            console.error('WMTS renderSubLayers error:', e);
-            return null;
-          }
-        },
-      });
+      wmtsLayer.props.opacity = overlayOpacity;
     } else if (wmsEnabled) {
-      // Recreate wmsLayer with new opacity
-      wmsLayer = new WMSLayer({
-        id: 'wms-layer',
-        data: 'http://59.27.61.194:30020/wms',
-        serviceType: 'wms',
-        layers: ['0'],
-        opacity: overlayOpacity,
-      });
+      wmsLayer.props.opacity = overlayOpacity;
     }
 
-    deck.setProps({
-      layers: getVisibleLayers(),
-    });
+    deck.setProps({ layers: getVisibleLayers() });
   });
 }
